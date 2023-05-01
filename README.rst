@@ -12,8 +12,7 @@ A short description of the project.
 For further information on how to use the scripts of this project,
 got the documentation shown above.
 
-
-
+https://drivendata.github.io/cookiecutter-data-science/
 
 
 .. ----------------------------------------------------------------------------
