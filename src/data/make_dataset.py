@@ -6,9 +6,18 @@ import pandas as pd
 import numpy as np
 
 
-#input_filepath = pd.read_parquet("data/raw/knee-provider.parquet")
-#output_filepath = "./data/processed/output_dataset.csv"
+input_filepath = "./data/raw/knee-provider.parquet"
+output_filepath = "./data/processed/output_dataset.csv"
+df = pd.read_parquet(input_filepath)
 
+
+def only_interesting(df):
+    ## Hier haal ik alle t1 vars weg die we niet gebruiken
+    t1_list = list(df.columns[df.columns.str.contains("t1")])
+    keep = ["t1_satisfaction", "t1_sucess", "oks_t1_score"] #deze hebben we nog wel nodig
+    t1_list = [element for element in t1_list if element not in keep] 
+    
+    return df.drop(t1_list, axis=1)
 
 def type_fixer(df):
     ## alle types naar de goede format zetten
@@ -16,8 +25,15 @@ def type_fixer(df):
     return df
 
 def missing_values(df):
-    ## missing values worden hier verwijderd of aangepast
+    ## Missing values worden hier verwijderd of aangepast
+    initial_size = len(df)
+    df = df.dropna(axis=0, how = 'any') #alles verwijderen
+    after_size = len(df)
+    
+    print(f"Er zijn {initial_size - after_size} observaties verwijderd.")
+    
     return df
+
 
 def near_zero_variances(df):
     ## Eerst de numerical
@@ -31,6 +47,8 @@ def near_zero_variances(df):
     # String vars toevoegen
     vars_drop.append("procedure") #deze string column bevat alleen dezelfde strings
     
+    print(f"{vars_drop} zijn verwijderd")
+    
     # Verwijderen columns
     return df.drop(vars_drop, axis=1)
 
@@ -38,10 +56,8 @@ def near_zero_variances(df):
 def nieuwe_vars(df):
     ## Hier worden nieuwe variabelen aangemaakt
     df['oks_change_score'] = df.oks_t1_score - df.oks_t0_score
-    df['oks_MID_5'] = np.where((df.oks_change_score >= 5), 'CHANGE','NO_CHANGE') #Als definitie van MID 15 zou zijn. Dit nog onderbouwen met lit.
-    df['oks_MID_7'] = np.where((df.oks_change_score >= 7), 'CHANGE','NO_CHANGE')
-    df['oks_MID_10'] = np.where((df.oks_change_score >= 10), 'CHANGE','NO_CHANGE')
-    df['succesfaction'] = np.where((df.t1_sucess > 3) & (df.t1_satisfaction > 4) & (df.oks_MID_5 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
+    df['oks_MID_5'] = np.where((df.oks_change_score >= 5), 'CHANGE','NO_CHANGE') 
+    df['succesfaction_and'] = np.where((df.t1_sucess > 3) & (df.t1_satisfaction > 4) & (df.oks_MID_5 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
     df['succesfaction_or'] = np.where((df.t1_sucess > 3) | (df.t1_satisfaction > 4) | (df.oks_MID_5 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
     
     return df
@@ -54,7 +70,8 @@ def main(input_filepath, output_filepath):
 
     df = pd.read_parquet(input_filepath)
     
-    df = type_fixer(df)
+    df = only_interesting(df)
+    #df = type_fixer(df)
     df = missing_values(df)
     df = near_zero_variances(df)
     df = nieuwe_vars(df)
