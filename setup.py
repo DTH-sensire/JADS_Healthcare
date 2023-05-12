@@ -47,4 +47,5 @@ setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     license=LICENSE,
-    url=URL)
+    url=URL,
+    entry_points={"console_scripts": ["makedataset=src.data.make_dataset:main"]})

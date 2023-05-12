@@ -6,9 +6,9 @@ import pandas as pd
 import numpy as np
 
 
-input_filepath = "./data/raw/knee-provider.parquet"
-output_filepath = "./data/processed/output_dataset.csv"
-df = pd.read_parquet(input_filepath)
+#input_filepath = "./data/raw/knee-provider.parquet"
+#output_filepath = "./data/processed/output_dataset.csv"
+#df = pd.read_parquet(input_filepath)
 
 
 def only_interesting(df):
@@ -17,7 +17,7 @@ def only_interesting(df):
     keep = ["t1_satisfaction", "t1_sucess", "oks_t1_score"] #deze hebben we nog wel nodig
     t1_list = [element for element in t1_list if element not in keep] 
     
-    return df.drop(t1_list, axis=1)
+    return df.drop(t1_list, axis=1) 
 
 def type_fixer(df):
     ## alle types naar de goede format zetten
@@ -56,9 +56,9 @@ def near_zero_variances(df):
 def nieuwe_vars(df):
     ## Hier worden nieuwe variabelen aangemaakt
     df['oks_change_score'] = df.oks_t1_score - df.oks_t0_score
-    df['oks_MID_5'] = np.where((df.oks_change_score >= 5), 'CHANGE','NO_CHANGE') 
-    df['succesfaction_and'] = np.where((df.t1_sucess > 3) & (df.t1_satisfaction > 4) & (df.oks_MID_5 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
-    df['succesfaction_or'] = np.where((df.t1_sucess > 3) | (df.t1_satisfaction > 4) | (df.oks_MID_5 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
+    df['oks_MID_7'] = np.where((df.oks_change_score >= 7), 'CHANGE','NO_CHANGE') 
+    df['succesfaction_and'] = np.where((df.t1_sucess > 3) & (df.t1_satisfaction > 4) & (df.oks_MID_7 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
+    df['succesfaction_or'] = np.where((df.t1_sucess > 3) | (df.t1_satisfaction > 4) | (df.oks_MID_7 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
     
     return df
     
