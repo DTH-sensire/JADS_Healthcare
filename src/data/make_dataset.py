@@ -86,6 +86,14 @@ def type_fixer(df):
     
     return df
 
+def final_cleaning(df):
+    t1_list = list(df.columns[df.columns.str.contains("t1")])
+    t1_list.extend(['oks_change_score', 'oks_MID_7'])
+    df = df.drop(t1_list, axis=1)
+    
+    return df
+
+
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
@@ -99,6 +107,7 @@ def main(input_filepath, output_filepath):
     df = near_zero_variances(df)
     df = nieuwe_vars(df)
     df = type_fixer(df)
+    df = final_cleaning(df)
     
     df.to_parquet(output_filepath)
     
