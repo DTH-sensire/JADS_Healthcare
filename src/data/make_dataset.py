@@ -6,9 +6,9 @@ import pandas as pd
 import numpy as np
 
 
-#input_filepath = "./data/raw/knee-provider.parquet"
-#output_filepath = "./data/processed/output_dataset.csv"
-#df = pd.read_parquet(input_filepath)
+input_filepath = r"C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/raw/knee-provider.parquet"
+output_filepath = r"C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/output_dataset.parquet"
+df = pd.read_parquet(input_filepath)
 
 
 def only_interesting(df):
@@ -17,20 +17,31 @@ def only_interesting(df):
     keep = ["t1_satisfaction", "t1_sucess", "oks_t1_score"] #deze hebben we nog wel nodig
     t1_list = [element for element in t1_list if element not in keep] 
     
+    t1_list.extend(["provider_code", 't0_eq5d_index_profile', 't1_eq5d_index_profile']) #niet relevant door dataset
+    
     return df.drop(t1_list, axis=1) 
-
-def type_fixer(df):
-    ## alle types naar de goede format zetten
-    df = df.provider_code.to_string() #dit is een unieke identifier, dus string
-    return df
 
 def missing_values(df):
     ## Missing values worden hier verwijderd of aangepast
+    
+    ## Eerst de 9 omzetten naar 0
+    naar_zero = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis']
+    df[naar_zero] = df[naar_zero].replace(9, 0)
+    
+    a = list(df.columns)
+    a.remove("t0_eq_vas")
+    
+    # VAS lleen pakken
+    df['t0_eq_vas'] = df['t0_eq_vas'].replace(999,np.nan)
+    
+    #De rest naar nan
+    df[a] = df[a].replace(9, np.nan)
+    
     initial_size = len(df)
     df = df.dropna(axis=0, how = 'any') #alles verwijderen
     after_size = len(df)
     
-    print(f"Er zijn {initial_size - after_size} observaties verwijderd.")
+    print(f"Er zijn {initial_size - after_size} observaties verwijderd. Dit is {(initial_size - after_size) / initial_size * 100}%")
     
     return df
 
@@ -61,7 +72,20 @@ def nieuwe_vars(df):
     df['succesfaction_or'] = np.where((df.t1_sucess > 3) | (df.t1_satisfaction > 4) | (df.oks_MID_7 == 'NO_CHANGE'), 'negatief_advies', 'positief_advies')
     
     return df
+
+
+def type_fixer(df):
+    ## alle types naar de goede format zetten
     
+    uint8 = list(df.select_dtypes('uint8').columns)
+    uint16 = list(df.select_dtypes('uint16').columns)
+    naar_cat = uint8 + uint16
+    
+    for col in naar_cat:
+        df[col] = df[col].astype('category')
+    
+    return df
+
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
@@ -71,12 +95,12 @@ def main(input_filepath, output_filepath):
     df = pd.read_parquet(input_filepath)
     
     df = only_interesting(df)
-    #df = type_fixer(df)
     df = missing_values(df)
     df = near_zero_variances(df)
     df = nieuwe_vars(df)
+    df = type_fixer(df)
     
-    df.to_csv(output_filepath)
+    df.to_parquet(output_filepath)
     
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
