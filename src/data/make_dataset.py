@@ -29,7 +29,8 @@ def missing_values(df):
     df[naar_zero] = df[naar_zero].replace(9, 0)
     
     a = list(df.columns)
-    a.remove("t0_eq_vas")
+    keep2 = ['oks_t0_score', 'oks_t1_score',"t0_eq_vas"]
+    a = [element for element in a if element not in keep2] 
     
     # VAS lleen pakken
     df['t0_eq_vas'] = df['t0_eq_vas'].replace(999,np.nan)
