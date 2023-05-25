@@ -30,7 +30,7 @@ df = type_fixer(df)
 
 ## Train test
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(df.drop(['succesfaction_or', 'succesfaction_and'], axis=1), df['succesfaction_or'], test_size=0.33, random_state=42, stratify=df['succesfaction_and'])
+X_train, X_test, y_train, y_test = train_test_split(df.drop(['succesfaction_or', 'succesfaction_and'], axis=1), df['succesfaction_or'], test_size=0.33, random_state=42, stratify=df['succesfaction_or'])
 
 ## One Hot Encoding
 cats = list(X_train.select_dtypes('category').columns)
@@ -100,3 +100,5 @@ plt.show()
 out = pd.DataFrame(X_train.columns[sorted_idx], perm_importance.importances_mean[sorted_idx])
 
 out
+
+out.to_csv("c:/users/dave/desktop/temp.csv")
