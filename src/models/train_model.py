@@ -7,6 +7,8 @@ X_train = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthca
 y_train = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_train.csv")
 
 
+
+
 ## Train test
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(df.drop(['succesfaction_or', 'succesfaction_and'], axis=1), df['succesfaction_or'], test_size=0.33, random_state=42, stratify=df['succesfaction_or'])
