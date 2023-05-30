@@ -2,24 +2,16 @@
 import pandas as pd
 import numpy as np
 
-#test:
+#Load data:
 X_train = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train.parquet")
 y_train = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_train.csv")
-
-
-
-
-## Train test
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(df.drop(['succesfaction_or', 'succesfaction_and'], axis=1), df['succesfaction_or'], test_size=0.33, random_state=42, stratify=df['succesfaction_or'])
-
-## One Hot Encoding
-cats = list(X_train.select_dtypes('category').columns)
-X_train = pd.get_dummies(X_train, columns=cats)
-
-cats = list(X_test.select_dtypes('category').columns)
-X_test = pd.get_dummies(X_test, columns=cats)
-
+y_train = np.ravel(y_train, order='C')
+X_test = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_test.parquet")
+y_test = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_test.csv")
+y_test = np.ravel(y_test, order='C')
+X_vali = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_vali.parquet")
+y_vali = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_vali.csv")
+y_vali = np.ravel(y_vali, order='C')
 
 ## Feature selection
 import numpy as np
@@ -141,7 +133,7 @@ yhat = model_naive.predict(X_train)
 
 from sklearn.metrics import precision_score
 precision = precision_score(y_train, yhat)
-print(precision) # 0.02 precision
+print(precision) # 0.16 precision
 
 ## Normale Random Forest
 from sklearn.model_selection import cross_validate
@@ -178,7 +170,7 @@ plt.show()
 
 ## Balanced Random Forest
 from imblearn.ensemble import BalancedRandomForestClassifier
-brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=10,random_state=42, class_weight=None)
+brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=10,random_state=42, class_weight='balanced_subsample')
 brf.fit(X_train, y_train)
 preds_brf = brf.predict(X_test)
 
@@ -209,13 +201,13 @@ out.to_csv("c:/users/dave/desktop/temp.csv")
 
 
 
-## Support Vector Machines
-from sklearn import svm
 
-svm_model = svm.SVC()
-svm_model.fit(X_train, y_train)
+## Random forest II
+from yellowbrick.model_selection import learning_curve
 
-
+rfc = RandomForestClassifier(n_estimators=10, random_state=42, class_weight='balanced_subsample')
+print(learning_curve(rfc, X_train, y_train, cv=10, scoring='precision'))
+print("hello")
 
 
 
