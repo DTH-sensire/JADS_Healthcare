@@ -139,9 +139,9 @@ def main(input_filepath, output_filepath):
     X_train.to_parquet(f"{out}X_train.parquet")
     X_test.to_parquet(f"{out}X_test.parquet")
     X_vali.to_parquet(f"{out}X_vali.parquet")
-    y_train.to_csv(f"{out}y_train.parquet")
-    y_test.to_csv(f"{out}y_test.parquet")
-    y_vali.to_csv(f"{out}y_vali.parquet")
+    y_train.to_csv(f"{out}y_train.csv")
+    y_test.to_csv(f"{out}y_test.csv")
+    y_vali.to_csv(f"{out}y_vali.csv")
     
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')

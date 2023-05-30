@@ -3,32 +3,8 @@ import pandas as pd
 import numpy as np
 
 #test:
-X_train2 = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train.parquet")
-
-# Read data
-df = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/output_dataset.parquet")
-
-
-df = df.replace('positief_advies', 0)
-df = df.replace('negatief_advies', 1)
-
-def type_fixer(df):
-    ## alle types naar de goede format zetten
-    
-    uint8 = list(df.select_dtypes('uint8').columns)
-    uint16 = list(df.select_dtypes('uint16').columns)
-    
-    to_cat2 = list(df.columns[df.columns.str.contains("t0")])
-    numericals = ['t0_eq5d_index', 't0_eq_vas', 'oks_t0_score']
-    to_cat2 = [element for element in to_cat2 if element not in numericals] 
-    naar_cat = uint8 + uint16 + to_cat2
-    
-    for col in naar_cat:
-        df[col] = df[col].astype('category')
-    
-    return df
-
-df = type_fixer(df)
+X_train = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train.parquet")
+y_train = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_train.csv")
 
 
 ## Train test
