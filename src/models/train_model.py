@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 
+#test:
+X_train2 = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train.parquet")
 
 # Read data
 df = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/output_dataset.parquet")
@@ -226,3 +228,16 @@ out = pd.DataFrame(X_train.columns[sorted_idx], perm_importance.importances_mean
 out
 
 out.to_csv("c:/users/dave/desktop/temp.csv")
+
+
+
+## Support Vector Machines
+from sklearn import svm
+
+svm_model = svm.SVC()
+svm_model.fit(X_train, y_train)
+
+
+
+
+

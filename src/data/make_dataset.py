@@ -80,20 +80,42 @@ def type_fixer(df):
     
     uint8 = list(df.select_dtypes('uint8').columns)
     uint16 = list(df.select_dtypes('uint16').columns)
-    naar_cat = uint8 + uint16
+    
+    to_cat2 = list(df.columns[df.columns.str.contains("t0")])
+    numericals = ['t0_eq5d_index', 't0_eq_vas', 'oks_t0_score']
+    to_cat2 = [element for element in to_cat2 if element not in numericals] 
+    naar_cat = uint8 + uint16 + to_cat2
     
     for col in naar_cat:
         df[col] = df[col].astype('category')
     
     return df
 
+
 def final_cleaning(df):
     t1_list = list(df.columns[df.columns.str.contains("t1")])
     t1_list.extend(['oks_change_score', 'oks_MID_7'])
     df = df.drop(t1_list, axis=1)
     
+    df = df.replace('positief_advies', 0)
+    df = df.replace('negatief_advies', 1)
+    
     return df
 
+def train_test_vali_split(df):
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(df.drop(['succesfaction_or', 'succesfaction_and'], axis=1), df['succesfaction_or'], test_size=0.10, random_state=42, stratify=df['succesfaction_or'])
+    X_train, X_vali, y_train, y_vali = train_test_split(X_train, y_train, test_size=0.10, random_state=42, stratify=y_train)
+    
+    return(X_train, X_test, X_vali, y_train, y_test, y_vali)
+
+def onehotEncode(X_train, X_test, X_vali):
+    cats = list(X_train.select_dtypes('category').columns)
+    X_train = pd.get_dummies(X_train, columns=cats)
+    X_test = pd.get_dummies(X_test, columns=cats)
+    X_vali = pd.get_dummies(X_vali, columns=cats)
+    
+    return(X_train, X_test, X_vali)
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
@@ -109,8 +131,17 @@ def main(input_filepath, output_filepath):
     df = nieuwe_vars(df)
     df = type_fixer(df)
     df = final_cleaning(df)
+    X_train, X_test, X_vali, y_train, y_test, y_vali = train_test_vali_split(df)
+    X_train, X_test, X_vali = onehotEncode(X_train, X_test, X_vali)
     
-    df.to_parquet(output_filepath)
+    out = r"C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/"
+    
+    X_train.to_parquet(f"{out}X_train.parquet")
+    X_test.to_parquet(f"{out}X_test.parquet")
+    X_vali.to_parquet(f"{out}X_vali.parquet")
+    y_train.to_csv(f"{out}y_train.parquet")
+    y_test.to_csv(f"{out}y_test.parquet")
+    y_vali.to_csv(f"{out}y_vali.parquet")
     
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
