@@ -170,7 +170,7 @@ plt.show()
 
 ## Balanced Random Forest
 from imblearn.ensemble import BalancedRandomForestClassifier
-brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=10,random_state=42, class_weight='balanced_subsample')
+brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=100,random_state=42, class_weight='balanced_subsample')
 brf.fit(X_train, y_train)
 preds_brf = brf.predict(X_test)
 
@@ -182,6 +182,12 @@ plt.show()
 from sklearn import metrics
 precision = metrics.precision_score(y_test, preds_brf)
 print(f"Precision =  {(precision * 100).round(1)}")
+
+
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=42)
+scoring = ["precision"]
+cv_result = cross_validate(brf, X_train, y_train, scoring=scoring)
+print(f"Precision: {cv_result['test_precision'].mean():.3f}")
 
 ## Permutatie importance (aangezien var importance van RF prioriteit geeft aan numerieke data)
 import matplotlib.pyplot as plt
@@ -201,13 +207,70 @@ out.to_csv("c:/users/dave/desktop/temp.csv")
 
 
 
+######################################################################
+## Parameter tuning voor BRF
+from imblearn.ensemble import BalancedRandomForestClassifier
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+from sklearn import metrics
 
-## Random forest II
-from yellowbrick.model_selection import learning_curve
+brf = BalancedRandomForestClassifier(random_state=42)
+brf.fit(X_train, y_train)
+preds_brf = brf.predict(X_test)
 
-rfc = RandomForestClassifier(n_estimators=10, random_state=42, class_weight='balanced_subsample')
-print(learning_curve(rfc, X_train, y_train, cv=10, scoring='precision'))
-print("hello")
+from sklearn.model_selection import GridSearchCV
+
+params = { 
+    'n_estimators': [100, 200, 500],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth' : [4,5,6,7,8],
+    'criterion' :['gini', 'entropy']
+}
+
+CV_brf = GridSearchCV(brf, param_grid=params, cv = 5, scoring='precision')
+CV_brf.fit(X_train, y_train)
+CV_brf.best_params_ #{'criterion': 'entropy', 'max_depth': 7, 'max_features': 'auto', 'n_estimators': 100}
+
+brf2 = BalancedRandomForestClassifier(criterion='entropy', max_depth=7, max_features='auto', n_estimators=100,random_state=42, class_weight='balanced_subsample')
+brf2.fit(X_train, y_train)
+preds = brf2.predict(X_test)
+
+
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #28.4%
+
+
+ConfusionMatrixDisplay.from_predictions(y_test, preds, display_labels=['Positief_advies', 'Negatief_advies']).plot() #896 goede negatief
+plt.show()
+
+
+## Parameter tuning voor normale RF
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn import metrics
+from sklearn.model_selection import cross_validate
+from sklearn.model_selection import RepeatedStratifiedKFold
+
+rf = RandomForestClassifier(random_state=42, class_weight='balanced', max_features='log2')
+
+params = { 
+    'n_estimators': [10, 20, 50],
+}
+
+CV_rf = GridSearchCV(rf, param_grid=params, cv = 10, scoring='precision')
+CV_rf.fit(X_train, y_train) ## duurt te lang
+CV_rf.best_params_
 
 
 
+rf = RandomForestClassifier(random_state=42, n_estimators=200, criterion='gini', class_weight='balanced', max_features='log2')
+rf.fit(X_train, y_train)
+
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=42)
+scoring = ["precision"]
+cv_result = cross_validate(rf, X_train, y_train, scoring=scoring)
+print(f"Precision: {cv_result['test_precision'].mean():.3f}")
+
+preds = rf.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #77.6 balanced beter

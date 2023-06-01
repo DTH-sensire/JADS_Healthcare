@@ -17,6 +17,10 @@ def only_interesting(df):
     keep = ["t1_satisfaction", "t1_sucess", "oks_t1_score"] #deze hebben we nog wel nodig
     t1_list = [element for element in t1_list if element not in keep] 
     
+    ## Volgende cols weg vanwege Deventer Ziekenhuis limits
+    dropped = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis', 't0_assisted', 't0_symptom_period', 't0_previous_surgery', 't0_living_arrangements', 't0_disability', 'revision_flag']
+    t1_list.extend(dropped)
+    
     t1_list.extend(["provider_code", 't0_eq5d_index_profile', 't1_eq5d_index_profile']) #niet relevant door dataset
     
     return df.drop(t1_list, axis=1) 
@@ -25,8 +29,8 @@ def missing_values(df):
     ## Missing values worden hier verwijderd of aangepast
     
     ## Eerst de 9 omzetten naar 0
-    naar_zero = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis']
-    df[naar_zero] = df[naar_zero].replace(9, 0)
+    #naar_zero = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis']
+    #df[naar_zero] = df[naar_zero].replace(9, 0)
     
     a = list(df.columns)
     keep2 = ['oks_t0_score', 'oks_t1_score',"t0_eq_vas"]
