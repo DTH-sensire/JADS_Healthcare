@@ -17,26 +17,30 @@ def only_interesting(df):
     keep = ["t1_satisfaction", "t1_sucess", "oks_t1_score"] #deze hebben we nog wel nodig
     t1_list = [element for element in t1_list if element not in keep] 
     
-    ## Volgende cols weg vanwege Deventer Ziekenhuis limits
-    dropped = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis', 't0_assisted', 't0_symptom_period', 't0_previous_surgery', 't0_living_arrangements', 't0_disability', 'revision_flag']
-    t1_list.extend(dropped)
-    
     t1_list.extend(["provider_code", 't0_eq5d_index_profile', 't1_eq5d_index_profile']) #niet relevant door dataset
     
     return df.drop(t1_list, axis=1) 
+
+
+def DeventerZiekenhuis(df):
+    ## Volgende cols weg vanwege Deventer Ziekenhuis limits
+    dropped = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis', 't0_assisted', 't0_symptom_period', 't0_previous_surgery', 't0_living_arrangements', 't0_disability', 'revision_flag']
+    return df.drop(dropped, axis=1)
+
 
 def missing_values(df):
     ## Missing values worden hier verwijderd of aangepast
     
     ## Eerst de 9 omzetten naar 0
-    #naar_zero = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis']
-    #df[naar_zero] = df[naar_zero].replace(9, 0)
+    if dz_input == 'N':
+        naar_zero = ['heart_disease', 'high_bp', 'stroke', 'circulation', 'lung_disease', 'diabetes', 'kidney_disease', 'nervous_system', 'liver_disease', 'cancer', 'depression', 'arthritis']
+        df[naar_zero] = df[naar_zero].replace(9, 0)
     
     a = list(df.columns)
     keep2 = ['oks_t0_score', 'oks_t1_score',"t0_eq_vas"]
     a = [element for element in a if element not in keep2] 
     
-    # VAS lleen pakken
+    # VAS alleen pakken
     df['t0_eq_vas'] = df['t0_eq_vas'].replace(999,np.nan)
     
     #De rest naar nan
@@ -82,16 +86,19 @@ def nieuwe_vars(df):
 def type_fixer(df):
     ## alle types naar de goede format zetten
     
-    uint8 = list(df.select_dtypes('uint8').columns)
-    uint16 = list(df.select_dtypes('uint16').columns)
+    if dummy_input == 'Y':
+        uint8 = list(df.select_dtypes('uint8').columns)
+        uint16 = list(df.select_dtypes('uint16').columns)
+        
+        to_cat2 = list(df.columns[df.columns.str.contains("t0")])
+        numericals = ['t0_eq5d_index', 't0_eq_vas', 'oks_t0_score']
+        to_cat2 = [element for element in to_cat2 if element not in numericals] 
+        naar_cat = uint8 + uint16 + to_cat2
+        
+        for col in naar_cat:
+            df[col] = df[col].astype('category')
     
-    to_cat2 = list(df.columns[df.columns.str.contains("t0")])
-    numericals = ['t0_eq5d_index', 't0_eq_vas', 'oks_t0_score']
-    to_cat2 = [element for element in to_cat2 if element not in numericals] 
-    naar_cat = uint8 + uint16 + to_cat2
-    
-    for col in naar_cat:
-        df[col] = df[col].astype('category')
+    df['gender'] = df['gender'].astype('bool')
     
     return df
 
@@ -121,6 +128,17 @@ def onehotEncode(X_train, X_test, X_vali):
     
     return(X_train, X_test, X_vali)
 
+def standardScaling(X_train, X_test, X_vali):
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    
+    nums = list(X_train.select_dtypes(['float32', 'float64']).columns)
+    X_train[nums] = scaler.fit_transform(X_train[nums])
+    X_test[nums] = scaler.fit_transform(X_test[nums])
+    X_vali[nums] = scaler.fit_transform(X_vali[nums])
+    
+    return(X_train, X_test, X_vali)
+
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
@@ -128,24 +146,35 @@ def onehotEncode(X_train, X_test, X_vali):
 def main(input_filepath, output_filepath):
 
     df = pd.read_parquet(input_filepath)
-    
     df = only_interesting(df)
+    
+    dz_input = input("Dataset voor Deventer Ziekenhuis: (Y/N) ")
+    if dz_input == "Y":
+        df = DeventerZiekenhuis(df)
+    
     df = missing_values(df)
     df = near_zero_variances(df)
     df = nieuwe_vars(df)
+    
+    dummy_input = input("Dummy coderen?: (Y/N) ")
     df = type_fixer(df)
+    
     df = final_cleaning(df)
     X_train, X_test, X_vali, y_train, y_test, y_vali = train_test_vali_split(df)
     X_train, X_test, X_vali = onehotEncode(X_train, X_test, X_vali)
     
+    ss_input = input("Standard Scaling?: (Y/N) ")
+    if ss_input == 'Y':
+        X_train, X_test, X_vali = standardScaling(X_train, X_test, X_vali)
+    
     out = r"C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/"
     
-    X_train.to_parquet(f"{out}X_train.parquet")
-    X_test.to_parquet(f"{out}X_test.parquet")
-    X_vali.to_parquet(f"{out}X_vali.parquet")
-    y_train.to_csv(f"{out}y_train.csv", index=False)
-    y_test.to_csv(f"{out}y_test.csv", index=False)
-    y_vali.to_csv(f"{out}y_vali.csv", index=False)
+    X_train.to_parquet(f"{out}X_train_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.parquet")
+    X_test.to_parquet(f"{out}X_test_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.parquet")
+    X_vali.to_parquet(f"{out}X_vali_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.parquet")
+    y_train.to_csv(f"{out}y_train_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.csv", index=False)
+    y_test.to_csv(f"{out}y_test_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.csv", index=False)
+    y_vali.to_csv(f"{out}y_vali_Dz{dz_input}_Dummy{dummy_input}_Ss{ss_input}.csv", index=False)
     
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')

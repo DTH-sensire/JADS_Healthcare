@@ -26,6 +26,8 @@ from sklearn.model_selection import learning_curve, StratifiedKFold, train_test_
 from sklearn.feature_selection import RFECV, SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
 from eli5.sklearn import PermutationImportance
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
@@ -170,19 +172,16 @@ plt.show()
 
 ## Balanced Random Forest
 from imblearn.ensemble import BalancedRandomForestClassifier
-brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=100,random_state=42, class_weight='balanced_subsample')
+brf = BalancedRandomForestClassifier(max_depth=None, n_estimators=100,random_state=42, class_weight='balanced')
 brf.fit(X_train, y_train)
 preds_brf = brf.predict(X_test)
+precision = metrics.precision_score(y_test, preds_brf)
+print(f"Precision =  {(precision * 100).round(1)}") #24.6
 
 from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 ConfusionMatrixDisplay.from_predictions(y_test, preds_brf, display_labels=['Positief_advies', 'Negatief_advies']).plot()
 plt.show()
-
-from sklearn import metrics
-precision = metrics.precision_score(y_test, preds_brf)
-print(f"Precision =  {(precision * 100).round(1)}")
-
 
 cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=42)
 scoring = ["precision"]
@@ -217,6 +216,8 @@ from sklearn import metrics
 brf = BalancedRandomForestClassifier(random_state=42)
 brf.fit(X_train, y_train)
 preds_brf = brf.predict(X_test)
+precision = metrics.precision_score(y_test, preds_brf)
+print(f"Precision =  {(precision * 100).round(1)}") #24.0%
 
 from sklearn.model_selection import GridSearchCV
 
@@ -235,9 +236,12 @@ brf2 = BalancedRandomForestClassifier(criterion='entropy', max_depth=7, max_feat
 brf2.fit(X_train, y_train)
 preds = brf2.predict(X_test)
 
+threshold = 0.8
+preds_prob = brf2.predict_proba(X_test)
+preds = (preds_prob[:,1] >= threshold).astype('int')
 
 precision = metrics.precision_score(y_test, preds)
-print(f"Precision =  {(precision * 100).round(1)}") #28.4%
+print(f"Precision =  {(precision * 100).round(1)}") #26.5%
 
 
 ConfusionMatrixDisplay.from_predictions(y_test, preds, display_labels=['Positief_advies', 'Negatief_advies']).plot() #896 goede negatief
@@ -263,14 +267,77 @@ CV_rf.best_params_
 
 
 
-rf = RandomForestClassifier(random_state=42, n_estimators=200, criterion='gini', class_weight='balanced', max_features='log2')
+rf = RandomForestClassifier(random_state=42, n_estimators=200, criterion='gini', class_weight='balanced', max_features='sqrt')
 rf.fit(X_train, y_train)
+preds = rf.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #59.9 nu met laatste cols eraf
+
+threshold = 0.65
+preds_prob = rf.predict_proba(X_test)
+preds = (preds_prob[:,1] >= threshold).astype('int')
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}")
+ConfusionMatrixDisplay.from_predictions(y_test, preds, display_labels=['Positief_advies', 'Negatief_advies']).plot()
+plt.show()
+
 
 cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=42)
 scoring = ["precision"]
 cv_result = cross_validate(rf, X_train, y_train, scoring=scoring)
 print(f"Precision: {cv_result['test_precision'].mean():.3f}")
 
-preds = rf.predict(X_test)
+
+
+### Log regression
+from sklearn.linear_model import LogisticRegression
+
+lr = LogisticRegression(random_state=42, class_weight={0 : 0.5, 1 : 0.5})
+lr.fit(X_train, y_train)
+preds = lr.predict(X_test)
 precision = metrics.precision_score(y_test, preds)
-print(f"Precision =  {(precision * 100).round(1)}") #77.6 balanced beter
+print(f"Precision =  {(precision * 100).round(1)}") #54.4
+ConfusionMatrixDisplay.from_predictions(y_test, preds, display_labels=['Positief_advies', 'Negatief_advies']).plot()
+plt.show()
+
+
+
+### er is nog een optie om met thresholds te werken: https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/
+
+
+## Imblearn classifiers:
+from imblearn.ensemble import BalancedBaggingClassifier, BalancedRandomForestClassifier, EasyEnsembleClassifier, RUSBoostClassifier
+from sklearn.metrics import confusion_matrix
+
+bfc = BalancedRandomForestClassifier(random_state=42)
+bfc.fit(X_train, y_train)
+preds = bfc.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #24
+print(confusion_matrix(y_test, preds))
+
+bbc = BalancedBaggingClassifier(random_state=42)
+bbc.fit(X_train, y_train)
+preds = bbc.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #24.7
+print(confusion_matrix(y_test, preds))
+
+from sklearn.ensemble import HistGradientBoostingClassifier
+eec = EasyEnsembleClassifier(random_state=42, sampling_strategy='all', estimator=HistGradientBoostingClassifier(random_state=42))
+eec.fit(X_train, y_train)
+preds = eec.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #25.8 deze is het beste
+print(confusion_matrix(y_test, preds))
+
+
+rbc = RUSBoostClassifier(random_state=42)
+rbc.fit(X_train, y_train)
+preds = rbc.predict(X_test)
+precision = metrics.precision_score(y_test, preds)
+print(f"Precision =  {(precision * 100).round(1)}") #25.7
+print(confusion_matrix(y_test, preds))
+
+
+
