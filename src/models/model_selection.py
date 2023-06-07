@@ -1,4 +1,3 @@
-
 ## packages
 import pandas as pd
 import numpy as np
@@ -140,7 +139,7 @@ scores["Recall"].append(cv_result["test_recall"].mean())
 df_output = pd.DataFrame(scores, index=index)
 df_output
 
-## Support Vector Machine (tot nu toe beste op testset)
+## Support Vector Machine
 from sklearn.svm import LinearSVC
 model_svc = LinearSVC(random_state=42, dual = False, max_iter=2000)
 cv_result = cross_validate(model_svc, X_train, y_train, scoring=scoring)
@@ -183,23 +182,23 @@ df_output
 ## Het beste model nu testen op de test en vali set
 ## Test model op test set
 from sklearn import metrics
-model_svc.fit(X_train, y_train)
-preds = model_svc.predict(X_test)
+model_rf_b.fit(X_train, y_train)
+preds = model_rf_b.predict(X_test)
 precision = metrics.precision_score(y_test, preds)
-print(f"Precision =  {(precision * 100).round(1)}") #24.7
+print(f"Precision =  {(precision * 100).round(1)}")
 print(confusion_matrix(y_test, preds))
 
 ## Test model op vali set
 preds = model_svc.predict(X_vali)
 precision = metrics.precision_score(y_vali, preds)
-print(f"Precision =  {(precision * 100).round(1)}") #24.7
+print(f"Precision =  {(precision * 100).round(1)}")
 print(confusion_matrix(y_vali, preds))
 
 ## Undersampling
 model_svc.fit(X_res, y_res)
 preds = model_svc.predict(X_test)
 precision = metrics.precision_score(y_test, preds)
-print(f"Precision =  {(precision * 100).round(1)}") #24.7
+print(f"Precision =  {(precision * 100).round(1)}")
 print(confusion_matrix(y_test, preds))
 
 
