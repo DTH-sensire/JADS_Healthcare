@@ -5,14 +5,14 @@ from sklearn.model_selection import cross_validate
 from sklearn.metrics import confusion_matrix
 
 #Load data:
-X_train = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train_DzN_DummyY_SsY.parquet")
-y_train = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_train_DzN_DummyY_SsY.csv")
+X_train = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_train_DzN_DummyN_SsN.parquet")
+y_train = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_train_DzN_DummyN_SsN.csv")
 y_train = np.ravel(y_train, order='C')
-X_test = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_test_DzN_DummyY_SsY.parquet")
-y_test = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_test_DzN_DummyY_SsY.csv")
+X_test = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_test_DzN_DummyN_SsN.parquet")
+y_test = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_test_DzN_DummyN_SsN.csv")
 y_test = np.ravel(y_test, order='C')
-X_vali = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_vali_DzN_DummyY_SsY.parquet")
-y_vali = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_vali_DzN_DummyY_SsY.csv")
+X_vali = pd.read_parquet("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/X_vali_DzN_DummyN_SsN.parquet")
+y_vali = pd.read_csv("C:/Users/Dave/Desktop/JADS/JADS_project/JADS_Healthcare/data/processed/y_vali_DzN_DummyN_SsN.csv")
 y_vali = np.ravel(y_vali, order='C')
 
 ## Tabel maken voor alle preds
@@ -61,7 +61,7 @@ df_output
 
 ## Random Forest met balanced_subsample
 from sklearn.ensemble import RandomForestClassifier
-model_rf_bs = RandomForestClassifier(random_state=42, class_weight='balanced_subsample')
+model_rf_bs = RandomForestClassifier(random_state=42, class_weight='balanced_subsample', n_estimators=200, max_features = 'log2', criterion = 'gini', max_depth = None, max_leaf_nodes = None, n_jobs= -2)
 cv_result = cross_validate(model_rf_bs, X_train, y_train, scoring=scoring)
 
 index += ["Random Forest met Balanced Subsample"]
@@ -74,7 +74,7 @@ df_output
 
 ## Random Forest met balanced class_weight
 from sklearn.ensemble import RandomForestClassifier
-model_rf_b = RandomForestClassifier(random_state=42, class_weight='balanced')
+model_rf_b = RandomForestClassifier(random_state=42, class_weight='balanced', n_jobs=-2)
 cv_result = cross_validate(model_rf_b, X_train, y_train, scoring=scoring)
 
 index += ["Random Forest met Balanced"]
@@ -171,6 +171,19 @@ model_sgd = SGDClassifier(random_state=42)
 cv_result = cross_validate(model_sgd, X_train, y_train, scoring=scoring)
 
 index += ["Stochastic Gradient Descent"]
+scores["Precision"].append(cv_result["test_precision"].mean())
+scores["Average_Precision"].append(cv_result["test_average_precision"].mean())
+scores["Recall"].append(cv_result["test_recall"].mean())
+
+df_output = pd.DataFrame(scores, index=index)
+df_output
+
+## XGBoost
+import xgboost as xgb
+model_xgb = xgb.XGBClassifier(objective="binary:logistic", random_state=42)
+cv_result = cross_validate(model_xgb, X_train, y_train, scoring=scoring)
+
+index += ["XGBoost"]
 scores["Precision"].append(cv_result["test_precision"].mean())
 scores["Average_Precision"].append(cv_result["test_average_precision"].mean())
 scores["Recall"].append(cv_result["test_recall"].mean())

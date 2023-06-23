@@ -108,8 +108,8 @@ def final_cleaning(df):
     t1_list.extend(['oks_change_score', 'oks_MID_7'])
     df = df.drop(t1_list, axis=1)
     
-    df = df.replace('positief_advies', 0)
-    df = df.replace('negatief_advies', 1)
+    df = df.replace('geslaagde_behandeluitkomst', 0)
+    df = df.replace('nietgeslaagde_behandeluitkomst', 1)
     
     return df
 
@@ -185,3 +185,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     main()
     
+main(input_filepath=input_filepath, output_filepath=output_filepath)
